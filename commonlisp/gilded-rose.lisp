@@ -39,7 +39,7 @@
 ;; https://github.com/emilybache/GildedRose-Refactoring-Kata
 
 ;; Common Lisp version: Rainer Joswig, joswig@lisp.de, 2016
-;; Modifications: Manfred Bergmann, 2022
+;; Minor modifications (independent of CL impl.): Manfred Bergmann, 2022
 
 ;;; ================================================================
 ;;; Code
