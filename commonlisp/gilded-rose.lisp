@@ -13,6 +13,7 @@
 ;; All items have a Quality value which denotes how valuable the item is
 ;; At the end of each day our system lowers both values for every item
 ;; Pretty simple, right? Well this is where it gets interesting:
+;;
 ;; Once the sell by date has passed, Quality degrades twice as fast
 ;; The Quality of an item is never negative
 ;; "Aged Brie" actually increases in Quality the older it gets
@@ -45,59 +46,126 @@
 ;;; Code
 
 (defpackage :gilded-rose
-  (:use :cl))
+  (:use :cl)
+  (:export #:item
+           #:make-aged-brie
+           #:make-sulfuras
+           #:make-backstage
+           #:make-dext-vest
+           #:make-elixir
+           #:make-conjured
+           #:gilded-rose
+           #:make-gilded-rose
+           #:update-quality
+           #:sell-in
+           #:quality))
 
 (in-package :gilded-rose)
 
 
-;;; Class ITEM
+;;; Items
 
 (defclass item ()
-  ((name    :initarg :name    :type string)
-   (sell-in :initarg :sell-in :type integer)
-   (quality :initarg :quality :type integer)))
+  ((name :initarg :name :type string :accessor name)
+   (sell-in :initarg :sell-in :type integer :accessor sell-in)
+   (quality :initarg :quality :type integer :accessor quality)))
+
+(defclass aged-brie (item)
+  ((name :initform "Aged Brie")))
+
+(defclass sulfuras (item)
+  ((name :initform "Sulfuras, Hand of Ragnaros")))
+
+(defclass backstage (item)
+  ((name :initform "Backstage passes to a TAFKAL80ETC concert")))
+
+(defclass ordinary-item (item) ())
+
+(defclass conjured-item (item)
+  ((name :initform "Conjured Mana Cake")))
+
+;; Constructors
+
+(defun make-aged-brie (sell-in quality)
+  (make-instance 'aged-brie :sell-in sell-in :quality quality))
+
+(defun make-sulfuras (sell-in quality)
+  (make-instance 'sulfuras :sell-in sell-in :quality quality))
+
+(defun make-backstage (sell-in quality)
+  (make-instance 'backstage :sell-in sell-in :quality quality))
+
+(defun make-dext-vest (sell-in quality)
+  (make-instance 'ordinary-item :name "+5 Dexterity Vest" :sell-in sell-in :quality quality))
+
+(defun make-elixir (sell-in quality)
+  (make-instance 'ordinary-item :name "Elixir of the Mongoose" :sell-in sell-in :quality quality))
+
+(defun make-conjured (sell-in quality)
+  (make-instance 'conjured-item :sell-in sell-in :quality quality))
+
+;; 
 
 (defmethod to-string ((i item))
   (with-slots (name quality sell-in) i
     (format nil "~a, ~a, ~a" name sell-in quality)))
 
-;;; Class gilded-rose
+;; Class gilded-rose
+
+(defun make-gilded-rose (items)
+  (make-instance 'gilded-rose :items items))
 
 (defclass gilded-rose ()
   ((items :initarg :items)))
 
+;; -------------------------
+
 (defmethod update-quality ((gr gilded-rose))
   (with-slots (items) gr
-    (dotimes (i (length items))
-      (with-slots (name quality sell-in)
-          (elt items i)
-        (if (and (not (equalp name "Aged Brie"))
-                 (not (equalp name "Backstage passes to a TAFKAL80ETC concert")))
-            (if (> quality 0)
-                (if (not (equalp name "Sulfuras, Hand of Ragnaros"))
-                    (setf quality (- quality 1))))
-          (when (< quality 50)
-            (setf quality (+ quality 1))
-            (when (equalp name "Backstage passes to a TAFKAL80ETC concert")
-              (if (< sell-in 11)
-                  (if (< quality 50)
-                      (setf quality (+ quality 1))))
-              (if (< sell-in 6)
-                  (if (< quality 50)
-                      (setf quality (+ quality 1)))))))
+    (dolist (item items)
+      (update-quality item))))
 
-        (if (not (equalp name "Sulfuras, Hand of Ragnaros"))
-            (setf sell-in (- sell-in 1)))
+(defmethod update-quality ((item ordinary-item))
+  (with-slots (quality sell-in) item
+    (decf sell-in)
+    (decf quality)
+    (when (< sell-in 0)
+      (decf quality))
+    (when (< quality 0)
+      (setf quality 0))))
 
-        (if (< sell-in 0)
-            (if (not (equalp name "Aged Brie"))
-                (if (not (equalp name "Backstage passes to a TAFKAL80ETC concert"))
-                    (if (> quality 0)
-                        (if (not (equalp name "Sulfuras, Hand of Ragnaros"))
-                            (setf quality (- quality 1))))
-                  (setf quality (- quality quality)))
-              (if (< quality 50)
-                  (setf quality (+ quality 1)))))))))
+(defmethod update-quality ((item aged-brie))
+  (with-slots (quality sell-in) item
+    (decf sell-in)
+    (incf quality)
+    (when (< sell-in 0)
+      (incf quality))
+    (when (> quality 50)
+      (setf quality 50))))
+
+(defmethod update-quality ((item sulfuras))
+  ;; does nothing to the item
+  )
+
+(defmethod update-quality ((item backstage))
+  (with-slots (quality sell-in) item
+    (decf sell-in)
+    (incf quality)
+    (when (< sell-in 10)
+      (incf quality))
+    (when (< sell-in 5)
+      (incf quality))
+    (when (< sell-in 0)
+      (setf quality 0))))
+
+(defmethod update-quality ((item conjured-item))
+  (with-slots (quality sell-in) item
+    (decf sell-in)
+    (decf quality 2)
+    (when (< sell-in 0)
+      (decf quality 2))
+    (when (< quality 0)
+      (setf quality 0))))
 
 ;;; Example
 
