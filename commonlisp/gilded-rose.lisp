@@ -36,18 +36,16 @@
 
 ; https://github.com/emilybache/GildedRose-Refactoring-Kata
 
-; Common Lisp version: Rainer Joswig, joswig@lisp.de, 2016
-
-; Example from the command line:
-; sbcl --script gildedrose.lisp 10
+;; Common Lisp version: Rainer Joswig, joswig@lisp.de, 2016
+;; Modifications: Manfred Bergmann, 2022
 
 ;;; ================================================================
 ;;; Code
 
-(defpackage "GILDED-ROSE"
-  (:use "CL"))
+(defpackage :gilded-rose
+  (:use :cl))
 
-(in-package "GILDED-ROSE")
+(in-package :gilded-rose)
 
 
 ;;; Class ITEM
@@ -61,7 +59,7 @@
   (with-slots (name quality sell-in) i
     (format nil "~a, ~a, ~a" name sell-in quality)))
 
-;;; Class GILDED-ROSE
+;;; Class gilded-rose
 
 (defclass gilded-rose ()
   ((items :initarg :items)))
@@ -101,7 +99,7 @@
 
 ;;; Example
 
-(defun run-gilded-rose ()
+(defun run-gilded-rose (days)
   (write-line "OMGHAI!")
   (let* ((descriptions '(("+5 Dexterity Vest"                         10 20)
                          ("Aged Brie"                                  2  0)
@@ -113,19 +111,12 @@
                          ("Backstage passes to a TAFKAL80ETC concert"  5 49)
                          ;; this conjured item does not work properly yet
                          ("Conjured Mana Cake"                         3  6)))
-         (items (loop for (name sell-in quality) in descriptions
-                      collect (make-instance 'item
-                                             :name    name
-                                             :sell-in sell-in
-                                             :quality quality)))
-         (app (make-instance 'gilded-rose :items items))
-         (days 2))
-    #+sbcl
-    (if (second sb-ext:*posix-argv*)
-        (setf days (parse-integer (second sb-ext:*posix-argv*))))
-    #+lispworks
-    (if (fourth sys:*line-arguments-list*)
-        (setf days (parse-integer (fourth sys:*line-arguments-list*))))
+         (items (loop :for (name sell-in quality) :in descriptions
+                      :collect (make-instance 'item
+                                              :name name
+                                              :sell-in sell-in
+                                              :quality quality)))
+         (app (make-instance 'gilded-rose :items items)))
     (dotimes (i days)
       (format t "-------- day ~a --------~%" i)
       (format t "name, sell-in, quality~%")
@@ -133,8 +124,6 @@
         (write-line (to-string item)))
       (terpri)
       (update-quality app))))
-
-(run-gilded-rose)
 
 ;;; ================================================================
 ;;; EOF
